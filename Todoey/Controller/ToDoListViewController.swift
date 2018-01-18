@@ -13,6 +13,11 @@ class ToDoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     
+    var selectedCategory : Category? {
+        didSet {
+            loadItems()
+        }
+    }
     
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
@@ -97,7 +102,7 @@ class ToDoListViewController: UITableViewController {
             let newItem = Item(context: self.context)
             newItem.title = textField.text!
             newItem.done = false
-            
+            newItem.toParentCategory?.name = self.selectedCategory?.name
             self.itemArray.append(newItem)
             
             self.saveData()
@@ -134,11 +139,23 @@ class ToDoListViewController: UITableViewController {
     
     // The parameters in the below func in a refactored and improved upon code.
     // Look at previous commits of the code to get the simpler version.
-    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest()) {
+    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest(), predicate : NSPredicate? = nil) {
         
-//        let predicate = NSPredicate(format: "toParentCategory MATCHES %@", (selectedCategory?.name)!)
+        let categoryPredicate = NSPredicate(format: "toParentCategory.name MATCHES %@", (selectedCategory?.name)!)
+        
+        if let additionalPredicate = predicate {
+            
+            request.predicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, additionalPredicate])
+        } else {
+            request.predicate = categoryPredicate
+        }
+        
+        
+        
+//        let compoundPredicate = NSCompoundPredicate(andPredicateWithSubpredicates: [categoryPredicate, predicate])
 //
-//        request.predicate = predicate
+//
+//        request.predicate = compoundPredicate
 
             do {
             itemArray = try context.fetch(request)
@@ -166,7 +183,7 @@ extension ToDoListViewController : UISearchBarDelegate {
         let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
         
         //3. Add this predicate to the request
-        request.predicate = predicate
+        //request.predicate = predicate
         
         //4. Sort the results from my request to be displayed in the TableView
         let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
@@ -174,7 +191,7 @@ extension ToDoListViewController : UISearchBarDelegate {
         //5. Add this sort descriptor to the request
         request.sortDescriptors = [sortDescriptor]
         
-        loadItems(with : request)
+        loadItems(with : request , predicate : predicate)
         
         tableView.reloadData()
     }
