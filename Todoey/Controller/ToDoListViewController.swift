@@ -13,11 +13,15 @@ class ToDoListViewController: UITableViewController {
     
     var itemArray = [Item]()
     
+    
+    
     var selectedCategory : Category? {
         didSet {
             loadItems()
         }
     }
+    
+    
     
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
     
@@ -102,7 +106,7 @@ class ToDoListViewController: UITableViewController {
             let newItem = Item(context: self.context)
             newItem.title = textField.text!
             newItem.done = false
-            newItem.toParentCategory?.name = self.selectedCategory?.name
+            newItem.toParentCategory = self.selectedCategory
             self.itemArray.append(newItem)
             
             self.saveData()
@@ -131,7 +135,7 @@ class ToDoListViewController: UITableViewController {
         do {
             try context.save()
         } catch {
-            print(error)
+            print("Error while saving to Coredata = \(error)")
         }
         
         tableView.reloadData()
@@ -139,9 +143,9 @@ class ToDoListViewController: UITableViewController {
     
     // The parameters in the below func in a refactored and improved upon code.
     // Look at previous commits of the code to get the simpler version.
-    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest(), predicate : NSPredicate? = nil) {
+    func loadItems(with request : NSFetchRequest<Item> = Item.fetchRequest(), predicate : NSPredicate? = nil ) {
         
-        let categoryPredicate = NSPredicate(format: "toParentCategory.name MATCHES %@", (selectedCategory?.name)!)
+        let categoryPredicate = NSPredicate(format: "toParentCategory.name MATCHES %@", selectedCategory!.name!)
         
         if let additionalPredicate = predicate {
             
@@ -149,6 +153,9 @@ class ToDoListViewController: UITableViewController {
         } else {
             request.predicate = categoryPredicate
         }
+    
+        
+        
         
         
         
@@ -199,6 +206,7 @@ extension ToDoListViewController : UISearchBarDelegate {
     func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
         
         if searchBar.text?.count == 0 {
+            
             loadItems()
             
             DispatchQueue.main.async {
