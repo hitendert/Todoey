@@ -100,6 +100,7 @@ class ToDoListViewController: UITableViewController {
                 try self.realm.write {
                     let newItem = Item()
                     newItem.title = textField.text!
+                    newItem.dateCreated = Date()
                     self.selectedCategory?.items.append(newItem)
                 }
             } catch {
@@ -126,17 +127,39 @@ class ToDoListViewController: UITableViewController {
     
     func loadItems() {
        
-        thisVCItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
+        thisVCItems = selectedCategory?.items.sorted(byKeyPath: "dateCreated", ascending: false)
         
+        tableView.reloadData()
     }
+
+
+}
 
 //MARK: - Search Bar Implementation.
 
-
+extension ToDoListViewController : UISearchBarDelegate {
+    
+    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
+    
+        thisVCItems = thisVCItems?.filter("title CONTAINS[cd] %@", searchBar.text).sorted(byKeyPath: "dateCreated", ascending: false)
+        
+        tableView.reloadData()
+        
+    }
+    
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+        
+        if searchBar.text?.count == 0 {
+            loadItems()
+            
+            
+            DispatchQueue.main.async {
+                searchBar.resignFirstResponder()
+            }
+        }
+    }
     
 }
-
-
 
 
 
