@@ -7,14 +7,15 @@
 //
 
 import UIKit
-import CoreData
+import RealmSwift
 
 class CategoryTableViewController: UITableViewController {
     
+    let realm = try! Realm()
     
-    var catArray = [Category]()
+    var catArray : Results<Category>?
     
-    let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -26,14 +27,14 @@ class CategoryTableViewController: UITableViewController {
     //MARK: - TableView DataSource Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return catArray.count
+        return catArray?.count ?? 1
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "categoryCell", for: indexPath)
         
-        cell.textLabel?.text = catArray[indexPath.row].name
+        cell.textLabel?.text = catArray?[indexPath.row].name ?? "No Categories created yet"
         
         return cell
     }
@@ -52,7 +53,7 @@ class CategoryTableViewController: UITableViewController {
         
         if let indexPath = tableView.indexPathForSelectedRow {
             
-            destinationVC.selectedCategory = catArray[indexPath.row]
+            destinationVC.selectedCategory = catArray?[indexPath.row]
         }
     }
     
@@ -66,12 +67,12 @@ class CategoryTableViewController: UITableViewController {
         
         let action = UIAlertAction(title: "Add Category", style: .default) { (action) in
             
-            let newCat = Category(context: self.context)
+            let newCat = Category()
             newCat.name = textField.text!
             
-            self.catArray.append(newCat)
+            //self.catArray.append(newCat)
             
-            self.saveData()
+            self.saveData(category: newCat)
             
             
         }
@@ -90,10 +91,13 @@ class CategoryTableViewController: UITableViewController {
     
     //MARK: - Save the data
     
-    func saveData() {
+    func saveData(category : Category) {
         
         do {
-        try context.save()
+            try realm.write {
+                realm.add(category)
+                
+            }
         }
         catch {
             print(error)
@@ -107,15 +111,9 @@ class CategoryTableViewController: UITableViewController {
     
     func loadData() {
         
-        let request : NSFetchRequest<Category> = Category.fetchRequest()
+         catArray = realm.objects(Category.self)
         
-        do {
-            catArray = try context.fetch(request)
-        }
-        catch {
-            print(error)
-        }
-        
+
         tableView.reloadData()
     }
     
