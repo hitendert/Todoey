@@ -11,25 +11,22 @@ import RealmSwift
 
 class ToDoListViewController: UITableViewController {
     
-    //Declare the Item Array
-    var itemArray : Results<Item>?
-    
-    //Initialize Realm
     let realm = try! Realm()
     
-    //Declare the selected Category which will be initialized only when it gets a value from the other VC.
     var selectedCategory : Category? {
+        
         didSet {
+            
             loadItems()
         }
     }
     
+    var thisVCItems : Results<Item>?
 
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        loadItems()
-        print(FileManager.default.urls(for: .documentDirectory, in: .userDomainMask))
+            loadItems()
         
         }
 
@@ -38,60 +35,48 @@ class ToDoListViewController: UITableViewController {
     //MARK: - TableView DataSource Methods
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        
+
         let cell = tableView.dequeueReusableCell(withIdentifier: "toDoItemCell", for: indexPath)
         
-        if let item = itemArray?[indexPath.row] {
-            
-            cell.textLabel?.text = item.title
-            
-            //Ternany Operator ==>
-            // value = condition ? valueIfTrue : valueIfFalse
-                
-            cell.accessoryType = item.done ? .checkmark : .none
-            
-        } else {
-            cell.textLabel?.text = "No Items added"
-        }
+        cell.textLabel?.text = thisVCItems?[indexPath.row].title ?? "No items added yet"
+        
+        
+        //Ternary Operator
+        // Value = condition ? ValueIfTrue : ValueIfFalse
+        cell.accessoryType = (thisVCItems?[indexPath.row].done)! ? .checkmark : .none
         
         return cell
-        
+
     }
     
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         
-        return itemArray?.count ?? 1
-    
+        return thisVCItems?.count ?? 1
     }
     
     //MARK: - TableView Delegate Methods
     
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
-        if let item = itemArray?[indexPath.row] {
+        if let items = thisVCItems?[indexPath.row] {
             
             do {
-               try realm.write {
-                item.done = !item.done
-                
+                try realm.write {
+                    items.done = !items.done
                 }
             } catch {
-                print("Error saving done status, \(error)")
+                print(error)
             }
+            
             
         }
         
         tableView.reloadData()
         
-//        itemArray[indexPath.row].done = !itemArray[indexPath.row].done
-//
-//        saveData()
-//
         
-        //To Enable flashing of the cell when selected instead of contunous highlighting.
+        
         tableView.deselectRow(at: indexPath, animated: true)
-        
     }
     
     //MARK: - Add new Items
@@ -99,87 +84,55 @@ class ToDoListViewController: UITableViewController {
     @IBAction func addButtonPressed(_ sender: UIBarButtonItem) {
         
         var textField = UITextField()
-    
-        let alert = UIAlertController(title: "Add new Todoey Item", message: "", preferredStyle: .alert)
-    
-        let action = UIAlertAction(title: "Add Item", style: .default) { (action) in
+        
+        let alert = UIAlertController(title: "Add ToDo Item", message: "Add the task you want to accomplish", preferredStyle: .alert)
+        
+        alert.addTextField { (alertTextField) in
             
-            if let currentCategory = self.selectedCategory {
-                
-                do {
-                    try self.realm.write {
-                        let newItem = Item()
-                        newItem.title = textField.text!
-                        currentCategory.items.append(newItem)
-                    }
-                } catch {
-                    print("Error saving new Items, \(error)")
+            alertTextField.placeholder = "Add the task"
+            textField = alertTextField
+            
+        }
+        
+        let action = UIAlertAction(title: "Add", style: .default) { (action) in
+        
+            do {
+                try self.realm.write {
+                    let newItem = Item()
+                    newItem.title = textField.text!
+                    self.selectedCategory?.items.append(newItem)
                 }
-                
+            } catch {
+                print("Error while saving items \(error)")
             }
-            
-            
             
             self.tableView.reloadData()
             
         }
         
-        alert.addTextField { (alertTextField) in
-            
-            alertTextField.placeholder = "Create new ToDoey item"
-            textField = alertTextField
-
-        }
-        
-        
+       
         alert.addAction(action)
         
         present(alert, animated: true, completion: nil)
+        
+        
     }
     
     
+    //MARK: - Save Items
+    
+   
+    
+    
     func loadItems() {
-        itemArray = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
+       
+        thisVCItems = selectedCategory?.items.sorted(byKeyPath: "title", ascending: true)
+        
     }
 
 //MARK: - Search Bar Implementation.
 
-//extension ToDoListViewController : UISearchBarDelegate {
-//    
-//    func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-//        
-//        //1. Read the context
-//        let request : NSFetchRequest<Item> = Item.fetchRequest()
-//        
-//        //2. Modify our request using predicate
-//        let predicate = NSPredicate(format: "title CONTAINS[cd] %@", searchBar.text!)
-//        
-//        //3. Add this predicate to the request
-//        //request.predicate = predicate
-//        
-//        //4. Sort the results from my request to be displayed in the TableView
-//        let sortDescriptor = NSSortDescriptor(key: "title", ascending: true)
-//        
-//        //5. Add this sort descriptor to the request
-//        request.sortDescriptors = [sortDescriptor]
-//        
-//        loadItems(with : request , predicate : predicate)
-//        
-//        tableView.reloadData()
-//    }
-//    
-//    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-//        
-//        if searchBar.text?.count == 0 {
-//            
-//            loadItems()
-//            
-//            DispatchQueue.main.async {
-//                searchBar.resignFirstResponder()
-//            }
-//            
-//        }
-//    }
+
     
 }
 

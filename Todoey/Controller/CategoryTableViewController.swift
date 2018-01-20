@@ -12,31 +12,32 @@ import RealmSwift
 class CategoryTableViewController: UITableViewController {
     
     let realm = try! Realm()
-    
-    var catArray : Results<Category>?
-    
-    
 
+    var categories : Results<Category>?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        loadData()
         
+        loadCategories()
+
     }
     
     //MARK: - TableView DataSource Methods
     
     override func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return catArray?.count ?? 1
+        
+        return categories?.count ?? 1
+        
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         
         let cell = tableView.dequeueReusableCell(withIdentifier: "categoryCell", for: indexPath)
         
-        cell.textLabel?.text = catArray?[indexPath.row].name ?? "No Categories created yet"
+        cell.textLabel?.text = categories?[indexPath.row].name ?? "No Categories added"
         
         return cell
+        
     }
     
     //MARK:- TableView Delegate Methods
@@ -44,43 +45,40 @@ class CategoryTableViewController: UITableViewController {
     override func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         
         performSegue(withIdentifier: "toItem", sender: self)
+        
     }
-  
+    
+    
+    //MARK: - Preparation for Segue:
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         
         let destinationVC = segue.destination as! ToDoListViewController
         
-        if let indexPath = tableView.indexPathForSelectedRow {
-            
-            destinationVC.selectedCategory = catArray?[indexPath.row]
-        }
+        let indexPath = tableView.indexPathForSelectedRow
+        
+        destinationVC.selectedCategory = categories?[(indexPath?.row)!]
     }
-    
+  
     
     //MARK: - Add new category
     @IBAction func catAddButtonPressed(_ sender: UIBarButtonItem) {
         
         var textField = UITextField()
         
-        let alert = UIAlertController(title: "Add Category", message: "Add the category name for your To Do List", preferredStyle: .alert)
+        let alert = UIAlertController(title: "Add Category", message: "Add the category name which you want to create", preferredStyle: .alert)
+
+        alert.addTextField { (alertTextField) in
+            alertTextField.placeholder = "Please enter the Category name"
+            textField = alertTextField
+        }
         
         let action = UIAlertAction(title: "Add Category", style: .default) { (action) in
             
-            let newCat = Category()
-            newCat.name = textField.text!
+            let newCategory = Category()
+            newCategory.name = textField.text!
             
-            //self.catArray.append(newCat)
-            
-            self.saveData(category: newCat)
-            
-            
-        }
-        
-        alert.addTextField { (alertTextField) in
-            
-            alertTextField.placeholder = "Create a category name"
-            textField = alertTextField
+            self.saveCategories(category : newCategory)
         }
         
         alert.addAction(action)
@@ -90,34 +88,28 @@ class CategoryTableViewController: UITableViewController {
     }
     
     //MARK: - Save the data
-    
-    func saveData(category : Category) {
+
+    func saveCategories(category : Category) {
         
         do {
             try realm.write {
                 realm.add(category)
-                
             }
+        } catch {
+            print("Error saving categories \(error)")
         }
-        catch {
-            print(error)
-        }
-        tableView.reloadData()
         
+        tableView.reloadData()
     }
     
     
     //MARK:- Load the data
     
-    func loadData() {
+    func loadCategories() {
         
-         catArray = realm.objects(Category.self)
+        categories = realm.objects(Category.self)
         
-
-        tableView.reloadData()
     }
-    
-
     
 }
 

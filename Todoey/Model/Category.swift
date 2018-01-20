@@ -14,6 +14,5 @@ class Category: Object {
     @objc dynamic var name : String = ""
     
     //One-To-Many Relationship
-    
     let items = List<Item>()
 }
